@@ -1,0 +1,3 @@
+for m in range(22, 105):
+        if not m % 4:
+            print(m)
