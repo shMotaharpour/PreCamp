@@ -1,0 +1,4 @@
+for m in range(200, 20, -5):
+        if not m % 3:
+            continue
+        print(m)
