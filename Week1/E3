@@ -1,0 +1,2 @@
+ans_list = [m for m in range(123, 567) if not m % 5 or not m % 6]
+print(sum(ans_list))
