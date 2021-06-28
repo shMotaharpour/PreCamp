@@ -1,0 +1,6 @@
+def ex5(length: int, height: int):
+    print(' ' * (height - 1) + '*' * length)
+    mid = '*' + ' ' * (length - 2) + '*'
+    for h in range(height-2, 0, -1):
+        print(' ' * h + mid)
+    print('*' * length)
