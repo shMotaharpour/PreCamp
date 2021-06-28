@@ -1,0 +1,6 @@
+ans_list = []
+for m in range(123, 567):
+    if m % 5 and m % 6:
+        continue
+    ans_list.append(m)
+print(sum(ans_list))
