@@ -1,0 +1,51 @@
+def tower_print(vec=None):
+    for ch in range(tower_number, -1, -1):
+        ch_a, ch_b, ch_c = (bar_dic[0],) * 3
+        if ch < len(bar[1]):
+            ch_a = bar_dic[bar[1][ch]]
+        if ch < len(bar[2]):
+            ch_b = bar_dic[bar[2][ch]]
+        if ch < len(bar[3]):
+            ch_c = bar_dic[bar[3][ch]]
+        print(ch_a, ch_b, ch_c)
+    if not vec:
+        print('_' * 18)
+    else:
+        print('__{}-->{}'.format(*vec))
+
+
+def tower_init():
+    b_dic = {ch: '#' * ch + ' ' * (tower_number - ch) for ch in range(tower_number, 0, -1)}
+    b_dic[0] = '|' + ' ' * (tower_number - 1)
+    b_a = [ch for ch in range(tower_number, 0, -1)]
+    b_b = []
+    b_c = []
+    return [], b_a, b_b, b_c, b_dic
+
+
+def tower_move(base: int, goal: int):
+    if len(bar[base]):
+        if not bar[goal] or bar[base][-1] < bar[goal][-1]:
+            bar[goal].append(bar[base][-1])
+            del bar[base][-1]
+            tower_print((base, goal))
+        else:
+            raise Exception('Wrong move')
+    else:
+        raise Exception('Wrong choose')
+
+
+def tower_solve(obj_num: int, base: int, goal: int, temp: int):
+    if obj_num == 1:
+        tower_move(base, goal)
+    else:
+        tower_solve(obj_num - 1, base, temp, goal)
+        tower_move(base, goal)
+        tower_solve(obj_num - 1, temp, goal, base)
+
+
+tower_number = 3
+*bar, bar_dic = tower_init()
+tower_print()
+tower_solve(tower_number, 1, 3, 2)
+
