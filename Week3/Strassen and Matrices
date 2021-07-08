@@ -1,0 +1,189 @@
+from typing import List
+
+
+class Matrix:
+    def __init__(self, input_matrix: List[List] = None):
+        if input_matrix in [[], None]:
+            self.mat = []
+            self.row, self.cl = 0, 0
+        elif type(input_matrix) in [int, float]:
+            self.mat = input_matrix
+            self.row, self.cl = 1, 1
+        elif isinstance(input_matrix, list):
+            if all(isinstance(row, list) for row in input_matrix):
+                if all(len(row) == len(input_matrix[0]) for row in input_matrix):
+                    self.mat = [row[:] for row in input_matrix]
+                    self.cl = len(input_matrix[0])
+                    self.row = len(input_matrix)
+            elif all(type(element) in [int, float] for element in input_matrix):
+                self.mat = [input_matrix[:]]
+                self.cl = len(input_matrix)
+                self.row = 1
+        else:
+            raise Exception('Wrong input Type or Format')
+        self.size = (self.row, self.cl)
+
+    def __eq__(self, other):
+        if isinstance(other, Matrix):
+            if self.row == other.row and self.cl == other.cl:
+                if self.mat == other.mat:
+                    return True
+        return False
+
+    def __str__(self):
+        if self.size == (1, 1):
+            return str(self[0][0])
+        elif not isinstance(self[0][0], Matrix):
+            str_list = ['|' + '\t'.join(map(str, row)) + '|' for row in self.mat]
+            return '\n'.join(str_list)
+        else:
+            return f'{self.row}×{self.cl} Matrices recursion'
+
+    def __add__(self, other):
+        if self.size == other.size:
+            res = self.copy()
+            for i in range(self.row):
+                for j in range(self.cl):
+                    res.mat[i][j] += other[i][j]
+            return res
+        else:
+            raise Exception('The size of two matrices is not equal')
+
+    def __iadd__(self, other):
+        if self.size == other.size:
+            res = self.copy()
+            for i in range(self.row):
+                for j in range(self.cl):
+                    res[i][j] = res[i][j] + other[i][j]
+            return res
+        else:
+            raise Exception('The size of two matrices is not equal')
+
+    def __sub__(self, other):
+        if self.size == other.size:
+            res = self.copy()
+            for i in range(self.row):
+                for j in range(self.cl):
+                    res[i][j] -= other[i][j]
+            return res
+        else:
+            raise Exception('The size of two matrices is not equal')
+
+    def __getitem__(self, item):
+        return self.mat[item]
+
+    def blocking(self):
+        block_a, block_b, block_c, block_d = [], [], [], []
+        if self.cl > 1 and self.row > 1:
+            for n, row in enumerate(self.mat):
+                if n < self.row // 2:
+                    block_a.append(row[:self.cl // 2])
+                    block_b.append(row[self.cl // 2:])
+                else:
+                    block_c.append(row[:self.cl // 2])
+                    block_d.append(row[self.cl // 2:])
+            return Matrix([[Matrix(block_a), Matrix(block_b)], [Matrix(block_c), Matrix(block_d)]])
+        elif self.cl > 1:
+            block_a.append(self[0][:self.cl // 2])
+            block_b.append(self[0][self.cl // 2:])
+            return Matrix([[Matrix(block_a), Matrix(block_b)]])
+        elif self.row > 1:
+            for n, row in enumerate(self.mat):
+                if n < self.row // 2:
+                    block_a.append(row[:])
+                else:
+                    block_c.append(row[:])
+            return Matrix([
+                [[Matrix(block_a)],
+                 [Matrix(block_c)]]
+            ])
+
+    @staticmethod
+    def _unblocking_(b00, b01, b10, b11):
+        total = []
+        for i in range(b00.row):
+            row = []
+            for j in range(b00.cl):
+                row.append(b00[i][j])
+            for j in range(b01.cl):
+                row.append(b01[i][j])
+            total.append(row)
+        for i in range(b10.row):
+            row = []
+            for j in range(b10.cl):
+                row.append(b10[i][j])
+            for j in range(b11.cl):
+                row.append(b11[i][j])
+            total.append(row)
+        return Matrix(total)
+
+    def __mul__(self, other):
+        if type(other) in [int, float]:
+            return self._cons_mul(other)
+        elif isinstance(other, Matrix):
+            if other.size == (1, 1):
+                return self._cons_mul(other[0][0])
+            elif self.size == (1, 1):
+                return other._cons_mul(self[0][0])
+            elif self.cl == other.row:
+                return Matrix._strassen_dot_(self, other)
+            else:
+                raise Exception('matrices dimensions is not match')
+        else:
+            raise Exception('multiplication is impossible')
+
+    @staticmethod
+    def _strassen_dot_(matrix_left, matrix_right):
+        block_left = matrix_left.blocking()
+        block_right = matrix_right.blocking()
+        m1 = (block_left[0][0] + block_left[1][1]) * (block_right[0][0] + block_right[1][1])
+        m2 = (block_left[1][0] + block_left[1][1]) * block_right[0][0]
+        m3 = block_left[0][0] * (block_right[0][1] - block_right[1][1])
+        m4 = block_left[1][1] * (block_right[1][0] - block_right[0][0])
+        m5 = (block_left[0][0] + block_left[0][1]) * block_right[1][1]
+        m6 = (block_left[1][0] - block_left[0][0]) * (block_right[0][0] + block_right[0][1])
+        m7 = (block_left[0][1] - block_left[1][1]) * (block_right[1][0] + block_right[1][1])
+        c00 = m1 + m4 - m5 + m7
+        c01 = m3 + m5
+        c10 = m2 + m4
+        c11 = m1 - m2 + m3 + m6
+        return Matrix._unblocking_(c00, c01, c10, c11)
+
+    @staticmethod
+    def _vector_vertical_dot_matrix_(vec: list, mat_right):
+        res_mat = []
+        for clm in range(mat_right.cl):
+            res_mat.append(sum(vec[row] * mat_right.mat[row][clm] for row in range(mat_right.row)))
+        return Matrix(res_mat)
+
+    def __rmul__(self, other):
+        if type(other) in [int, float]:
+            return self._cons_mul(other)
+        elif type(other) is list:
+            if len(other) == self.row:
+                if all(type(elm) in [int, float] for elm in other):
+                    return Matrix._vector_vertical_dot_matrix_(other, self)
+        raise Exception('multiplication is impossible')
+
+    def _cons_mul(self, cons):
+        temp = self.copy()
+        for row in range(temp.row):
+            for cl in range(temp.cl):
+                temp.mat[row][cl] *= cons
+        return temp
+
+    def copy(self):
+        return Matrix(self.mat)
+
+
+# mat00 = Matrix([[2]])
+mat01 = Matrix([[2, 3]] * 2)
+# mat10 = Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+# mat11 = Matrix([[1, 2, 3], [1, 2, 3], [1, 2, 3]])
+mat02 = Matrix([list(range(1, 17))] * 16)
+print(mat02)
+mat_ans = mat02 * mat02
+print()
+print(mat_ans)
+
+
