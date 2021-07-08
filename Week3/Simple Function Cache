@@ -1,0 +1,21 @@
+def caching(fun):
+    cash = {}
+
+    def fun_cache(*args):
+        temp = cash.get(args, None)
+        if temp is None:
+            cash[args] = fun(*args)
+        return cash[args]
+
+    return fun_cache
+
+
+keystore = {}
+
+
+def foo(ins):
+    keystore[ins] = keystore.get(ins, '') + '1'
+    return keystore[ins]
+
+
+foo_cache = caching(foo)
